@@ -63,8 +63,13 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 .temp{font-family:var(--f-num);font-weight:200;font-size:112px;line-height:1;letter-spacing:-4px;margin:4px 0 0 18px;font-variant-numeric:tabular-nums}
 .temp sup{font-size:40px;font-weight:300;letter-spacing:0;vertical-align:top;position:relative;top:14px;margin-left:2px}
 .cond{font-size:21px;font-weight:700;margin-top:6px}
-.sub{font-size:14px;color:var(--ink-soft);margin-top:6px;display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
-.sub span{white-space:nowrap}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:-6px}
+.stat{background:var(--glass);border:1px solid var(--glass-line);border-radius:18px;padding:12px 14px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;flex-direction:column;gap:4px;min-width:0}
+.stat .lb{font-size:13px;font-weight:700;color:var(--ink-soft);letter-spacing:.04em}
+.stat .vl{font-family:var(--f-num);font-size:30px;font-weight:500;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat .vl small{font-size:16px;font-weight:400;margin-left:2px}
+.stat .vl .h{color:#ffd9a8}.stat .vl .l{color:#cfe8ff}
+.stat .vl .sl{font-weight:300;opacity:.6;margin:0 3px}
 .updated{font-size:11.5px;color:var(--ink-faint);margin-top:10px}
 
 /* hourly strip */
@@ -122,13 +127,23 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 .d .pp.zero{color:var(--sheet-soft);font-weight:500}
 
 /* search */
-.search{display:flex;flex-direction:column;gap:10px;margin-top:6px}
-.search input{width:100%;font:inherit;font-size:16px;padding:13px 14px;border-radius:14px;border:1px solid var(--sheet-line);background:transparent;color:var(--sheet-ink)}
-.res{list-style:none;margin:0;padding:0}
-.res button{width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--sheet-line);padding:12px 4px;color:var(--sheet-ink)}
+.find{position:relative;display:flex;flex-direction:column;gap:10px;margin-top:-8px}
+.sbox{display:flex;align-items:center;gap:8px;background:var(--glass);border:1px solid var(--glass-line);border-radius:14px;padding:0 12px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.sbox svg{flex:none;width:17px;height:17px;color:var(--ink-soft)}
+.sbox input{flex:1;min-width:0;font:inherit;font-size:16px;padding:11px 0;border:0;background:none;color:var(--ink);outline:none}
+.sbox input::placeholder{color:var(--ink-faint)}
+.sbox input::-webkit-search-cancel-button{display:none}
+.sbox .clr{border:0;background:none;padding:6px;color:var(--ink-soft);font-size:15px;line-height:1}
+.res{position:absolute;top:48px;left:0;right:0;z-index:15;list-style:none;margin:0;padding:4px 0;background:var(--sheet);color:var(--sheet-ink);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.22);max-height:60vh;overflow-y:auto}
+.res button{width:100%;text-align:left;background:none;border:0;padding:11px 14px;color:var(--sheet-ink)}
+.res li+li button{border-top:1px solid var(--sheet-line)}
 .res button small{display:block;color:var(--sheet-soft);font-size:12px}
-.gps{display:flex;align-items:center;gap:8px;justify-content:center;border:0;border-radius:14px;padding:13px;background:#2f6fb3;color:#fff;font-weight:700}
-.gps svg{width:16px;height:16px}
+.res .none{padding:12px 14px;color:var(--sheet-soft);font-size:14px}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:0 max(16px,env(safe-area-inset-left,0px))}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:5px;border:1px solid var(--glass-line);background:var(--glass);border-radius:999px;padding:7px 13px;font-size:13.5px;font-weight:700;white-space:nowrap}
+.chip svg{width:13px;height:13px}
+.chip.on{background:#fff;color:var(--sky2);border-color:#fff}
 
 .msg{background:rgba(0,0,0,.2);border-radius:16px;padding:14px 16px;font-size:14px;line-height:1.6}
 .msg button{margin-top:10px;border:0;border-radius:12px;padding:10px 14px;background:#fff;color:var(--sky2);font-weight:700}
@@ -150,13 +165,24 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
     </button>
   </div>
 
+  <div class="find">
+    <div class="sbox">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input id="q" type="search" placeholder="地名で天気を見る（例：東京、台北）" autocomplete="off" enterkeyhint="search" aria-label="地名で検索">
+      <button class="clr" id="clr" aria-label="入力を消す" hidden>✕</button>
+    </div>
+    <ul class="res" id="res" hidden></ul>
+    <div class="chips" id="chips"></div>
+  </div>
+
   <section class="now skeleton" id="now">
     <div id="nowIco"></div>
     <div class="temp" id="temp">--<sup>°</sup></div>
     <div class="cond" id="cond">読み込み中</div>
-    <div class="sub" id="sub"></div>
     <div class="updated" id="updated"></div>
   </section>
+
+  <section class="stats" id="stats" aria-label="今日の詳しい数字"></section>
 
   <div id="err" hidden></div>
 
@@ -295,7 +321,7 @@ async function useGPS(){
     const name = await placeName(p.lat, p.lon);
     loc = {lat:p.lat, lon:p.lon, name, gps:true};
     store.set('loc', loc);
-    hideErr();
+    hideErr(); renderChips();
     await load();
   }catch(e){
     setBusy(false);
@@ -305,7 +331,7 @@ async function useGPS(){
     showErr(denied
       ? '位置情報がオフになっています。<br>iPhoneの「設定 → プライバシーとセキュリティ → 位置情報サービス → Safari」を「使用中のみ」にすると、現地のお天気が自動で出ます。<br><button id="pickBtn">都市名で探す</button>'
       : '現在地を取得できませんでした。電波の良い場所で ⟳ を押すか、都市名で探してください。<br><button id="pickBtn">都市名で探す</button>');
-    const b=$('pickBtn'); if(b) b.onclick=openSearch;
+    const b=$('pickBtn'); if(b) b.onclick=focusSearch;
   }
 }
 
@@ -346,11 +372,11 @@ function render(j, at){
   // today's index = the daily entry matching current local date
   const today = cur.time.slice(0,10);
   let ti = d0.time.indexOf(today); if(ti<0) ti=0;
-  $('sub').innerHTML =
-    `<span>最高 ${Math.round(d0.temperature_2m_max[ti])}° / 最低 ${Math.round(d0.temperature_2m_min[ti])}°</span>`+
-    `<span>体感 ${Math.round(cur.apparent_temperature)}°</span>`+
-    `<span>湿度 ${cur.relative_humidity_2m}%</span>`+
-    `<span>風 ${cur.wind_speed_10m.toFixed(1)}m/s</span>`;
+  $('stats').innerHTML =
+    `<div class="stat"><span class="lb">最高 / 最低</span><span class="vl"><span class="h">${Math.round(d0.temperature_2m_max[ti])}°</span><span class="sl">/</span><span class="l">${Math.round(d0.temperature_2m_min[ti])}°</span></span></div>`+
+    `<div class="stat"><span class="lb">体感</span><span class="vl">${Math.round(cur.apparent_temperature)}°</span></div>`+
+    `<div class="stat"><span class="lb">湿度</span><span class="vl">${cur.relative_humidity_2m}<small>%</small></span></div>`+
+    `<div class="stat"><span class="lb">風</span><span class="vl">${cur.wind_speed_10m.toFixed(1)}<small>m/s</small></span></div>`;
 
   // local time label of destination
   const tzOff = j.utc_offset_seconds;
@@ -419,36 +445,93 @@ function openWeek(){
   $('sheetBody').innerHTML = weekHTML;
   openSheet('week');
 }
-function openSearch(){
-  $('sheetTitle').textContent='場所を変える';
-  $('sheetBody').innerHTML = `<div class="search">
-    <button class="gps" id="gpsBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>現在地を使う</button>
-    <input id="q" type="search" placeholder="都市名（例：那覇、台北、Hsinchu）" autocomplete="off" enterkeyhint="search">
-    <ul class="res" id="res"></ul></div>`;
-  openSheet('search');
-  $('gpsBtn').onclick = ()=>{ closeSheet(); useGPS(); };
-  let tmr;
-  $('q').addEventListener('input', e=>{ clearTimeout(tmr); tmr=setTimeout(()=>search(e.target.value), 350); });
-}
+/* ---------- search + recent places ---------- */
+function focusSearch(){ $('q').focus(); }
+function closeRes(){ $('res').hidden=true; $('res').innerHTML=''; }
+let seq=0;
 async function search(q){
-  q=q.trim(); const box=$('res'); if(!box) return;
-  if(q.length<1){ box.innerHTML=''; return; }
+  q=q.trim(); const box=$('res'); const my=++seq;
+  $('clr').hidden = !q;
+  if(!q){ closeRes(); return; }
   try{
-    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=8&language=ja`);
-    const j = await r.json();
-    const list = j.results||[];
-    if(!list.length){ box.innerHTML='<li style="padding:12px 4px;color:var(--sheet-soft)">見つかりませんでした。別の書き方（英語など）でも試してください。</li>'; return; }
-    box.innerHTML = list.map((x,i)=>`<li><button data-i="${i}">${esc(x.name)}<small>${esc([...new Set([x.admin1,x.country].filter(Boolean))].join('、'))}</small></button></li>`).join('');
+    const list = await findPlaces(q);
+    if(my!==seq) return;
+    box.hidden=false;
+    if(!list.length){ box.innerHTML='<li class="none">見つかりませんでした。「那覇市」のように市までつけるか、英語でも試してください。</li>'; return; }
+    box.innerHTML = list.map((x,i)=>`<li><button data-i="${i}">${esc(x.name)}<small>${esc(x.sub)}</small></button></li>`).join('');
     box.querySelectorAll('button').forEach(b=>b.onclick=()=>{
       const x=list[+b.dataset.i];
-      loc={lat:x.latitude, lon:x.longitude, name:x.name+(x.country?'、'+x.country:''), gps:false};
-      store.set('loc', loc); closeSheet(); hideErr(); load();
+      showPlace({lat:x.lat, lon:x.lon, name:x.name+(x.country?'、'+x.country:''), gps:false});
     });
-  }catch(e){ box.innerHTML='<li style="padding:12px 4px;color:var(--sheet-soft)">検索できませんでした。通信状態を確認してください。</li>'; }
+  }catch(e){ if(my===seq){ box.hidden=false; box.innerHTML='<li class="none">検索できませんでした。通信状態を確認してください。</li>'; } }
 }
+// Two place finders: Open-Meteo is good with roman letters ("Tokyo"),
+// OpenStreetMap is good with kanji ("東京", "台北"). Kanji queries also try "〇〇市".
+const PLACE_TYPES = new Set(['city','town','village','municipality','province','state','region','county','district','city_district','borough','suburb','quarter','neighbourhood','hamlet','island','country','prefecture','administrative']);
+async function osm(q){
+  const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=jsonv2&limit=8&accept-language=ja&addressdetails=1`);
+  const j = await r.json();
+  return j.filter(x=>PLACE_TYPES.has(x.addresstype)).map(x=>{
+    const a=x.address||{};
+    const area=a.state||a.province||a.region||a.county||'';
+    return {name:x.name||x.display_name.split(',')[0], lat:+x.lat, lon:+x.lon, country:a.country||'', sub:[...new Set([area,a.country].filter(Boolean))].join('、'), score:x.importance||0};
+  });
+}
+async function om(q){
+  const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=8&language=ja`);
+  const j = await r.json();
+  return (j.results||[]).map((x,i)=>({name:x.name, lat:x.latitude, lon:x.longitude, country:x.country||'', sub:[...new Set([x.admin1,x.country].filter(Boolean))].join('、'), score:.6-i*.05}));
+}
+async function findPlaces(q){
+  const cjk = /[぀-ヿ㐀-鿿豈-﫿]/.test(q);
+  const jobs = [];
+  if(cjk){
+    jobs.push(osm(q));
+    if(!/[市県区町村都府道省州]$/.test(q)) jobs.push(osm(q+'市'));
+    jobs.push(om(q));
+  }else{
+    jobs.push(om(q));
+  }
+  let all = (await Promise.allSettled(jobs)).flatMap(r=>r.status==='fulfilled'?r.value:[]);
+  if(!all.length && !cjk){ try{ all = await osm(q); }catch(e){} }
+  const base = q.replace(/[市県区町村都府]$/,'');
+  all.forEach(x=>{ const n=x.name.replace(/[市県区町村都府]$/,''); if(n===base) x.score+=1; else if(x.name.startsWith(base)) x.score+=.3; });
+  all.sort((a,b)=>b.score-a.score);
+  if(all.length && all[0].score>=1) all = all.filter(x=>x.score>=.3);
+  const out=[];
+  for(const x of all){ if(!out.some(o=>Math.abs(o.lat-x.lat)<.08 && Math.abs(o.lon-x.lon)<.08)) out.push(x); }
+  return out.slice(0,8);
+}
+function showPlace(p){
+  loc=p; store.set('loc', loc);
+  const rec=(store.get('recent')||[]).filter(r=>!(Math.abs(r.lat-p.lat)<.01 && Math.abs(r.lon-p.lon)<.01));
+  rec.unshift(p); store.set('recent', rec.slice(0,8));
+  $('q').value=''; $('clr').hidden=true; closeRes(); $('q').blur();
+  hideErr(); renderChips(); load();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function renderChips(){
+  const rec=store.get('recent')||[];
+  const here = !loc || loc.gps;
+  let h=`<button class="chip${here?' on':''}" data-gps="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>現在地</button>`;
+  h += rec.map((r,i)=>{
+    const on = !here && loc && Math.abs(r.lat-loc.lat)<.01 && Math.abs(r.lon-loc.lon)<.01;
+    return `<button class="chip${on?' on':''}" data-i="${i}">${esc(r.name.split('、')[0])}</button>`;
+  }).join('');
+  $('chips').innerHTML=h;
+  $('chips').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{
+    if(b.dataset.gps){ useGPS(); }
+    else showPlace(rec[+b.dataset.i]);
+  });
+}
+let tmr;
+$('q').addEventListener('input', e=>{ clearTimeout(tmr); tmr=setTimeout(()=>search(e.target.value), 500); });
+$('q').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); const f=$('res').querySelector('button'); if(f) f.click(); else { clearTimeout(tmr); search(e.target.value); } } });
+$('clr').onclick = ()=>{ $('q').value=''; $('clr').hidden=true; closeRes(); $('q').focus(); };
+document.addEventListener('click', e=>{ if(!e.target.closest('.find')) closeRes(); });
 
 $('weekBtn').onclick = openWeek;
-$('placeBtn').onclick = openSearch;
+$('placeBtn').onclick = focusSearch;
 $('refresh').onclick = ()=>{ if(!busy) useGPS(); };
 $('closeBtn').onclick = closeSheet;
 $('veil').onclick = closeSheet;
@@ -473,6 +556,7 @@ try{
 }catch(e){}
 
 /* ---------- start ---------- */
+renderChips();
 const last = store.get('last');
 if(last && last.loc){ loc = loc || last.loc; render(last.j, last.at); $('place').textContent=loc.name; }
 // Always try GPS first so the forecast follows you when you travel.
