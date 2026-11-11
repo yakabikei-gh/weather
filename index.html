@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>そらもよう</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="そらもよう">
+<meta name="theme-color" content="#2f6fb3">
+<link rel="apple-touch-icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Outfit:wght@200;300;500&display=swap">
+<style>
+/* Layout: full-bleed sky gradient that follows the weather; big temperature, a swipeable 24h strip, and a weekly sheet that slides up */
+:root{
+  --sky1:#5aa3e6; --sky2:#2f6fb3;
+  --ink:#ffffff; --ink-soft:rgba(255,255,255,.78); --ink-faint:rgba(255,255,255,.55);
+  --glass:rgba(255,255,255,.16); --glass-line:rgba(255,255,255,.26);
+  --rain:#bfe3ff; --sheet:#f4f7fb; --sheet-ink:#1d2b3a; --sheet-soft:#5c6b7b; --sheet-line:#e1e7ef;
+  --warm:#ffb35c; --cool:#7cc3ff;
+  --f-num:"Outfit",system-ui,sans-serif;
+  --f-text:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --sheet:#162130; --sheet-ink:#eaf1f8; --sheet-soft:#9fb0c2; --sheet-line:#26364a; color-scheme:dark }
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  font-family:var(--f-text); color:var(--ink);
+  background:linear-gradient(180deg,var(--sky1) 0%,var(--sky2) 100%) fixed;
+  background-color:var(--sky2);
+  transition:background .8s ease;
+  -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;
+  overscroll-behavior-y:none;
+}
+.wrap{
+  max-width:520px; margin:0 auto; min-height:100%;
+  padding-top:calc(env(safe-area-inset-top,0px) + 14px);
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex; flex-direction:column; gap:22px;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+/* top bar */
+.top{display:flex;align-items:center;gap:8px}
+.place{flex:1;min-width:0;display:flex;align-items:center;gap:6px;background:none;border:0;padding:6px 0;text-align:left}
+.place svg{flex:none;width:16px;height:16px}
+.place b{font-weight:700;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--glass-line);background:var(--glass);display:grid;place-items:center;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.iconbtn svg{width:19px;height:19px}
+.iconbtn.spin svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* now */
+.now{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:8px}
+.now .ico{width:96px;height:96px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.15))}
+.temp{font-family:var(--f-num);font-weight:200;font-size:112px;line-height:1;letter-spacing:-4px;margin:4px 0 0 18px;font-variant-numeric:tabular-nums}
+.temp sup{font-size:40px;font-weight:300;letter-spacing:0;vertical-align:top;position:relative;top:14px;margin-left:2px}
+.cond{font-size:21px;font-weight:700;margin-top:6px}
+.sub{font-size:14px;color:var(--ink-soft);margin-top:6px;display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.sub span{white-space:nowrap}
+.updated{font-size:11.5px;color:var(--ink-faint);margin-top:10px}
+
+/* hourly strip */
+.card{background:var(--glass);border:1px solid var(--glass-line);border-radius:22px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.card h2{margin:0;font-size:12.5px;font-weight:700;letter-spacing:.08em;color:var(--ink-soft);padding:14px 16px 0;display:flex;justify-content:space-between}
+.card h2 small{font-weight:500;letter-spacing:0}
+.hours{display:flex;overflow-x:auto;scroll-snap-type:x proximity;padding:10px 6px 14px;gap:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.hours::-webkit-scrollbar{display:none}
+.hr{flex:none;width:62px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0;border-radius:16px}
+.hr.first{background:rgba(255,255,255,.18)}
+.hr .t{font-size:12.5px;color:var(--ink-soft);font-weight:500}
+.hr.first .t{color:var(--ink);font-weight:700}
+.hr .day{font-size:10px;color:var(--ink);background:rgba(255,255,255,.22);border-radius:6px;padding:1px 5px;margin-bottom:-2px}
+.hr svg{width:32px;height:32px}
+.hr .v{font-family:var(--f-num);font-size:20px;font-weight:500;font-variant-numeric:tabular-nums}
+.hr .p{font-size:12px;font-weight:700;color:var(--rain);display:flex;align-items:center;gap:2px;font-variant-numeric:tabular-nums}
+.hr .p.zero{color:var(--ink-faint);font-weight:500}
+.hr .p svg{width:9px;height:11px}
+.hint{font-size:11px;color:var(--ink-faint);text-align:center;padding:0 0 12px;margin-top:-6px}
+
+/* week button */
+.weekbtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px;border-radius:18px;border:0;background:#fff;color:var(--sky2);font-weight:800;font-size:16px;box-shadow:0 8px 24px rgba(0,0,0,.14);transition:transform .15s}
+.weekbtn:active{transform:scale(.98)}
+.weekbtn svg{width:20px;height:20px}
+
+/* sheet */
+.veil{position:fixed;inset:0;background:rgba(10,20,35,.38);opacity:0;pointer-events:none;transition:opacity .3s;z-index:20}
+.veil.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:520px;margin:0 auto;background:var(--sheet);color:var(--sheet-ink);border-radius:26px 26px 0 0;
+  padding:10px max(18px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 18px) max(18px,env(safe-area-inset-left,0px));
+  transform:translateY(105%);transition:transform .38s cubic-bezier(.2,.8,.2,1);max-height:88vh;overflow-y:auto;box-shadow:0 -10px 40px rgba(0,0,0,.2)}
+.sheet.on{transform:none}
+.grab{width:42px;height:5px;border-radius:3px;background:var(--sheet-line);margin:0 auto 12px}
+.sheet header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.sheet h3{margin:0;font-size:18px;font-weight:800}
+.close{border:0;background:var(--sheet-line);width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--sheet-ink)}
+.close svg{width:16px;height:16px}
+.sheet .place2{font-size:13px;color:var(--sheet-soft);margin:0 0 10px}
+.days{list-style:none;margin:0;padding:0}
+.d{display:grid;grid-template-columns:86px 38px 1fr 46px;align-items:center;gap:8px;padding:12px 0;border-top:1px solid var(--sheet-line)}
+.d:first-child{border-top:0}
+.d .nm{font-weight:700;font-size:15px;line-height:1.15}
+.d .nm small{display:block;font-size:11.5px;font-weight:500;color:var(--sheet-soft)}
+.d .nm.sun{color:#d1495b}.d .nm.sat{color:#2f6fb3}
+@media (prefers-color-scheme: dark){.d .nm.sat{color:#7cb7ff}.d .nm.sun{color:#ff8a98}}
+.d svg.w{width:38px;height:38px;padding:2px;border-radius:11px;background:linear-gradient(180deg,#6ea9de,#3b72ad)}
+.d .nm small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.range{display:flex;align-items:center;gap:8px;font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:16px}
+.range .lo{color:var(--sheet-soft);width:30px;text-align:right}
+.range .hi{width:30px;font-weight:500}
+.bar{flex:1;height:6px;border-radius:3px;background:var(--sheet-line);position:relative;min-width:30px}
+.bar i{position:absolute;top:0;bottom:0;border-radius:3px;background:linear-gradient(90deg,var(--cool),var(--warm))}
+.d .pp{text-align:right;font-size:13px;font-weight:700;color:#2f86d6;font-variant-numeric:tabular-nums;line-height:1.2}
+.d .pp small{display:block;font-size:10.5px;color:var(--sheet-soft);font-weight:500}
+.d .pp.zero{color:var(--sheet-soft);font-weight:500}
+
+/* search */
+.search{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.search input{width:100%;font:inherit;font-size:16px;padding:13px 14px;border-radius:14px;border:1px solid var(--sheet-line);background:transparent;color:var(--sheet-ink)}
+.res{list-style:none;margin:0;padding:0}
+.res button{width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--sheet-line);padding:12px 4px;color:var(--sheet-ink)}
+.res button small{display:block;color:var(--sheet-soft);font-size:12px}
+.gps{display:flex;align-items:center;gap:8px;justify-content:center;border:0;border-radius:14px;padding:13px;background:#2f6fb3;color:#fff;font-weight:700}
+.gps svg{width:16px;height:16px}
+
+.msg{background:rgba(0,0,0,.2);border-radius:16px;padding:14px 16px;font-size:14px;line-height:1.6}
+.msg button{margin-top:10px;border:0;border-radius:12px;padding:10px 14px;background:#fff;color:var(--sky2);font-weight:700}
+.credit{font-size:10.5px;color:var(--ink-faint);text-align:center;margin-top:auto}
+.credit a{color:inherit}
+.skeleton .temp,.skeleton .cond{opacity:.35}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="top">
+    <button class="place" id="placeBtn" aria-label="場所を変える">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+      <b id="place">現在地を確認中…</b>
+    </button>
+    <button class="iconbtn" id="refresh" aria-label="現在地で更新">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
+    </button>
+  </div>
+
+  <section class="now skeleton" id="now">
+    <div id="nowIco"></div>
+    <div class="temp" id="temp">--<sup>°</sup></div>
+    <div class="cond" id="cond">読み込み中</div>
+    <div class="sub" id="sub"></div>
+    <div class="updated" id="updated"></div>
+  </section>
+
+  <div id="err" hidden></div>
+
+  <section class="card" aria-label="24時間の予報">
+    <h2>24時間の予報 <small id="tzlabel"></small></h2>
+    <div class="hours" id="hours"></div>
+    <div class="hint">← 横にスライドできます →</div>
+  </section>
+
+  <button class="weekbtn" id="weekBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+    1週間の予報を見る
+  </button>
+
+  <div class="credit">気象データ：<a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></div>
+</div>
+
+<div class="veil" id="veil"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="grab"></div>
+  <header><h3 id="sheetTitle">1週間の予報</h3><button class="close" id="closeBtn" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <div id="sheetBody"></div>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const store = {
+  get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+
+/* ---------- weather codes (WMO) ---------- */
+function info(code, isDay){
+  const c = code;
+  const n = !isDay;
+  if (c===0) return {t: n?'快晴（夜）':'快晴', k: n?'moon':'sun', s:'clear'};
+  if (c===1) return {t: n?'晴れ（夜）':'晴れ', k: n?'moon':'sun', s:'clear'};
+  if (c===2) return {t:'晴れ時々くもり', k: n?'pmoon':'psun', s:'part'};
+  if (c===3) return {t:'くもり', k:'cloud', s:'cloud'};
+  if (c===45||c===48) return {t:'霧', k:'fog', s:'cloud'};
+  if (c>=51&&c<=57) return {t:'霧雨', k:'drizzle', s:'rain'};
+  if (c===61) return {t:'小雨', k:'rain', s:'rain'};
+  if (c===63) return {t:'雨', k:'rain', s:'rain'};
+  if (c===65) return {t:'強い雨', k:'heavy', s:'rain'};
+  if (c===66||c===67) return {t:'みぞれ', k:'sleet', s:'rain'};
+  if (c===71) return {t:'小雪', k:'snow', s:'snow'};
+  if (c===73) return {t:'雪', k:'snow', s:'snow'};
+  if (c===75||c===77) return {t:'大雪', k:'snow', s:'snow'};
+  if (c===80) return {t:'にわか雨', k:'shower', s:'rain'};
+  if (c===81) return {t:'にわか雨', k:'shower', s:'rain'};
+  if (c===82) return {t:'激しいにわか雨', k:'heavy', s:'rain'};
+  if (c===85||c===86) return {t:'にわか雪', k:'snow', s:'snow'};
+  if (c>=95) return {t:'雷雨', k:'thunder', s:'storm'};
+  return {t:'—', k:'cloud', s:'cloud'};
+}
+const SKY = {
+  clear:  {d:['#58a8f0','#2a6fc0'], n:['#1f2e57','#0d1630']},
+  part:   {d:['#6ea9de','#3b72ad'], n:['#283658','#121a33']},
+  cloud:  {d:['#8ea3b8','#55697f'], n:['#2e3846','#171d27']},
+  rain:   {d:['#6d8399','#3b4d61'], n:['#25303d','#11171f']},
+  snow:   {d:['#a8bccf','#6f87a0'], n:['#36435a','#1a2130']},
+  storm:  {d:['#545e73','#2a3142'], n:['#1f2230','#0c0e16']},
+};
+
+/* ---------- icons (inline SVG) ---------- */
+const SUN = (cx,cy,r)=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#ffc93c"/><g stroke="#ffc93c" stroke-width="3" stroke-linecap="round">${[0,45,90,135,180,225,270,315].map(a=>{const R=a*Math.PI/180,x1=cx+Math.cos(R)*(r+5),y1=cy+Math.sin(R)*(r+5),x2=cx+Math.cos(R)*(r+10),y2=cy+Math.sin(R)*(r+10);return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`}).join('')}</g>`;
+const MOON = (cx,cy,r)=>`<path d="M${cx+r*.35} ${cy-r} a${r} ${r} 0 1 0 ${r*.75} ${r*1.55} a${r*.85} ${r*.85} 0 0 1 -${r*.75} -${r*1.55}z" fill="#ffe28a"/>`;
+const CLOUD = (y=0, fill='#ffffff', op=1)=>`<path transform="translate(0 ${y})" d="M18 50h30a11 11 0 0 0 0-22 15 15 0 0 0-28.5-3.5A11.5 11.5 0 0 0 18 50z" fill="${fill}" opacity="${op}"/>`;
+const DROPS = (n, col='#8fd0ff')=>{const xs=n===3?[22,32,42]:[24,38];return xs.map((x,i)=>`<line x1="${x}" y1="${55+(i%2)*2}" x2="${x-3}" y2="${62+(i%2)*2}" stroke="${col}" stroke-width="3.2" stroke-linecap="round"/>`).join('')};
+function icon(k){
+  let s='';
+  switch(k){
+    case 'sun': s=SUN(32,32,12); break;
+    case 'moon': s=MOON(30,32,14); break;
+    case 'psun': s=SUN(24,22,9)+CLOUD(6); break;
+    case 'pmoon': s=MOON(22,22,10)+CLOUD(6,'#dfe7f2'); break;
+    case 'cloud': s=CLOUD(-6,'#e9eef5',.75).replace('translate(0 -6)','translate(8 -10) scale(.8)')+CLOUD(2); break;
+    case 'fog': s=CLOUD(-4,'#eef2f7')+`<g stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity=".85"><line x1="14" y1="53" x2="50" y2="53"/><line x1="20" y1="60" x2="46" y2="60"/></g>`; break;
+    case 'drizzle': s=CLOUD(-4,'#eef2f7')+DROPS(2,'#a9dcff'); break;
+    case 'rain': case 'shower': s=(k==='shower'?SUN(46,16,7):'')+CLOUD(-4,'#eef2f7')+DROPS(3); break;
+    case 'heavy': s=CLOUD(-4,'#d8e0ea')+DROPS(3,'#5fb8ff')+`<line x1="28" y1="60" x2="25" y2="67" stroke="#5fb8ff" stroke-width="3.2" stroke-linecap="round"/>`; break;
+    case 'sleet': s=CLOUD(-4,'#eef2f7')+`<line x1="24" y1="55" x2="21" y2="62" stroke="#8fd0ff" stroke-width="3.2" stroke-linecap="round"/><circle cx="38" cy="59" r="3" fill="#fff"/>`; break;
+    case 'snow': s=CLOUD(-4,'#eef2f7')+[22,32,42].map((x,i)=>`<circle cx="${x}" cy="${57+(i%2)*4}" r="3" fill="#ffffff" stroke="#b8d4ee" stroke-width="1"/>`).join(''); break;
+    case 'thunder': s=CLOUD(-4,'#cfd7e2')+`<path d="M33 46l-7 11h6l-4 9 10-13h-6l4-7z" fill="#ffd23c"/>`; break;
+  }
+  return `<svg class="w" viewBox="0 0 64 64" aria-hidden="true">${s}</svg>`;
+}
+const DROP_SVG = `<svg viewBox="0 0 10 12" aria-hidden="true"><path d="M5 0C5 0 0 6 0 8.2A5 5 0 0 0 10 8.2C10 6 5 0 5 0z" fill="currentColor"/></svg>`;
+
+/* ---------- state ---------- */
+let loc = store.get('loc');     // {lat, lon, name, gps:true|false}
+let busy = false;
+
+function setSky(s, isDay){
+  const p = (SKY[s]||SKY.clear)[isDay?'d':'n'];
+  document.documentElement.style.setProperty('--sky1', p[0]);
+  document.documentElement.style.setProperty('--sky2', p[1]);
+  document.querySelector('meta[name=theme-color]').setAttribute('content', p[1]);
+}
+
+function showErr(html){
+  const e=$('err'); e.className='msg'; e.innerHTML=html; e.hidden=false;
+}
+function hideErr(){ $('err').hidden=true; }
+
+/* ---------- location ---------- */
+function getGPS(){
+  return new Promise((res, rej)=>{
+    if(!navigator.geolocation) return rej(new Error('nogeo'));
+    navigator.geolocation.getCurrentPosition(
+      p=>res({lat:p.coords.latitude, lon:p.coords.longitude}),
+      e=>rej(e),
+      {enableHighAccuracy:false, timeout:12000, maximumAge:10*60*1000}
+    );
+  });
+}
+async function placeName(lat, lon){
+  try{
+    const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ja`);
+    const j = await r.json();
+    const city = j.city || j.locality || '';
+    const area = j.principalSubdivision || '';
+    const country = j.countryName || '';
+    const parts = [city, area && area!==city ? area : '', ].filter(Boolean);
+    if (!parts.length && country) parts.push(country);
+    return parts.join('、') || `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+  }catch(e){ return `${lat.toFixed(2)}, ${lon.toFixed(2)}`; }
+}
+
+async function useGPS(){
+  setBusy(true);
+  $('place').textContent='現在地を確認中…';
+  try{
+    const p = await getGPS();
+    const name = await placeName(p.lat, p.lon);
+    loc = {lat:p.lat, lon:p.lon, name, gps:true};
+    store.set('loc', loc);
+    hideErr();
+    await load();
+  }catch(e){
+    setBusy(false);
+    if(loc){ $('place').textContent = loc.name; await load(); }
+    else $('place').textContent='場所を選んでください';
+    const denied = e && e.code===1;
+    showErr(denied
+      ? '位置情報がオフになっています。<br>iPhoneの「設定 → プライバシーとセキュリティ → 位置情報サービス → Safari」を「使用中のみ」にすると、現地のお天気が自動で出ます。<br><button id="pickBtn">都市名で探す</button>'
+      : '現在地を取得できませんでした。電波の良い場所で ⟳ を押すか、都市名で探してください。<br><button id="pickBtn">都市名で探す</button>');
+    const b=$('pickBtn'); if(b) b.onclick=openSearch;
+  }
+}
+
+/* ---------- weather ---------- */
+async function load(){
+  if(!loc) return;
+  setBusy(true);
+  $('place').textContent = loc.name;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}`
+    + `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,is_day,wind_speed_10m,precipitation`
+    + `&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,is_day`
+    + `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset`
+    + `&timezone=auto&forecast_days=8&wind_speed_unit=ms`;
+  try{
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('http '+r.status);
+    const j = await r.json();
+    store.set('last', {loc, j, at:Date.now()});
+    render(j, Date.now());
+    hideErr();
+  }catch(e){
+    const last = store.get('last');
+    if(last && last.loc && last.loc.lat===loc.lat){ render(last.j, last.at); }
+    showErr('お天気データを読み込めませんでした。通信状態を確認して ⟳ を押してください。');
+  }finally{ setBusy(false); }
+}
+
+function render(j, at){
+  const cur = j.current;
+  const inf = info(cur.weather_code, cur.is_day);
+  setSky(inf.s, !!cur.is_day);
+  $('now').classList.remove('skeleton');
+  $('nowIco').innerHTML = icon(inf.k).replace('class="w"','class="w ico"');
+  $('temp').innerHTML = `${Math.round(cur.temperature_2m)}<sup>°</sup>`;
+  $('cond').textContent = inf.t;
+
+  const d0 = j.daily;
+  // today's index = the daily entry matching current local date
+  const today = cur.time.slice(0,10);
+  let ti = d0.time.indexOf(today); if(ti<0) ti=0;
+  $('sub').innerHTML =
+    `<span>最高 ${Math.round(d0.temperature_2m_max[ti])}° / 最低 ${Math.round(d0.temperature_2m_min[ti])}°</span>`+
+    `<span>体感 ${Math.round(cur.apparent_temperature)}°</span>`+
+    `<span>湿度 ${cur.relative_humidity_2m}%</span>`+
+    `<span>風 ${cur.wind_speed_10m.toFixed(1)}m/s</span>`;
+
+  // local time label of destination
+  const tzOff = j.utc_offset_seconds;
+  const myOff = -new Date().getTimezoneOffset()*60;
+  $('tzlabel').textContent = tzOff!==myOff ? `現地時間 ${j.timezone_abbreviation || ''}`.trim() : '';
+  const ago = Math.round((Date.now()-at)/60000);
+  $('updated').textContent = ago<1 ? 'たった今更新' : ago<60 ? `${ago}分前に更新` : `${Math.round(ago/60)}時間前に更新`;
+
+  // hourly: from current hour, 25 points (now → 24h later)
+  const h = j.hourly;
+  const curHour = cur.time.slice(0,13); // "YYYY-MM-DDTHH"
+  let start = h.time.findIndex(t=>t.slice(0,13)===curHour); if(start<0) start=0;
+  let html='';
+  for(let i=start;i<=start+24 && i<h.time.length;i++){
+    const t=h.time[i], hh=+t.slice(11,13), first=i===start;
+    const hi = info(h.weather_code[i], h.is_day[i]);
+    const pp = h.precipitation_probability[i] ?? 0;
+    const temp = first ? cur.temperature_2m : h.temperature_2m[i];
+    const newDay = !first && hh===0;
+    html += `<div class="hr${first?' first':''}">`
+      + (newDay ? `<span class="day">${+t.slice(5,7)}/${+t.slice(8,10)}</span>` : '')
+      + `<span class="t">${first?'今':hh+'時'}</span>`
+      + icon(hi.k)
+      + `<span class="v">${Math.round(temp)}°</span>`
+      + `<span class="p${pp<10?' zero':''}">${DROP_SVG}${pp}%</span>`
+      + `</div>`;
+  }
+  $('hours').innerHTML = html;
+  $('hours').scrollLeft = 0;
+
+  // weekly
+  const W = ['日','月','火','水','木','金','土'];
+  const days = [];
+  for(let i=ti;i<ti+7 && i<d0.time.length;i++) days.push(i);
+  const lo = Math.min(...days.map(i=>d0.temperature_2m_min[i]));
+  const hi = Math.max(...days.map(i=>d0.temperature_2m_max[i]));
+  const span = Math.max(1, hi-lo);
+  weekHTML = `<p class="place2">${esc(loc.name)}</p><ul class="days">` + days.map((i,n)=>{
+    const ds=d0.time[i], dt=new Date(ds+'T12:00:00'), wd=dt.getDay();
+    const name = n===0?'今日':n===1?'明日':W[wd]+'曜';
+    const cls = wd===0?' sun':wd===6?' sat':'';
+    const di = info(d0.weather_code[i], 1);
+    const mn=d0.temperature_2m_min[i], mx=d0.temperature_2m_max[i];
+    const pp=d0.precipitation_probability_max[i] ?? 0, mm=d0.precipitation_sum[i] ?? 0;
+    return `<li class="d" title="${di.t}"><div class="nm${cls}">${name}<small>${+ds.slice(5,7)}/${+ds.slice(8,10)}・${di.t}</small></div>`
+      + icon(di.k)
+      + `<div class="range"><span class="lo">${Math.round(mn)}°</span><span class="bar"><i style="left:${((mn-lo)/span*100).toFixed(1)}%;right:${((hi-mx)/span*100).toFixed(1)}%"></i></span><span class="hi">${Math.round(mx)}°</span></div>`
+      + `<div class="pp${pp<10?' zero':''}">${pp}%${mm>=0.1?`<small>${mm.toFixed(1)}mm</small>`:''}</div></li>`;
+  }).join('') + '</ul>';
+  if(sheetMode==='week') $('sheetBody').innerHTML = weekHTML;
+}
+let weekHTML = '<p class="place2">読み込み中…</p>';
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function setBusy(b){ busy=b; $('refresh').classList.toggle('spin', b); }
+
+/* ---------- sheet ---------- */
+let sheetMode = null;
+function openSheet(mode){
+  sheetMode = mode;
+  $('sheet').classList.add('on'); $('veil').classList.add('on');
+}
+function closeSheet(){ sheetMode=null; $('sheet').classList.remove('on'); $('veil').classList.remove('on'); }
+function openWeek(){
+  $('sheetTitle').textContent='1週間の予報';
+  $('sheetBody').innerHTML = weekHTML;
+  openSheet('week');
+}
+function openSearch(){
+  $('sheetTitle').textContent='場所を変える';
+  $('sheetBody').innerHTML = `<div class="search">
+    <button class="gps" id="gpsBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>現在地を使う</button>
+    <input id="q" type="search" placeholder="都市名（例：那覇、台北、Hsinchu）" autocomplete="off" enterkeyhint="search">
+    <ul class="res" id="res"></ul></div>`;
+  openSheet('search');
+  $('gpsBtn').onclick = ()=>{ closeSheet(); useGPS(); };
+  let tmr;
+  $('q').addEventListener('input', e=>{ clearTimeout(tmr); tmr=setTimeout(()=>search(e.target.value), 350); });
+}
+async function search(q){
+  q=q.trim(); const box=$('res'); if(!box) return;
+  if(q.length<1){ box.innerHTML=''; return; }
+  try{
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=8&language=ja`);
+    const j = await r.json();
+    const list = j.results||[];
+    if(!list.length){ box.innerHTML='<li style="padding:12px 4px;color:var(--sheet-soft)">見つかりませんでした。別の書き方（英語など）でも試してください。</li>'; return; }
+    box.innerHTML = list.map((x,i)=>`<li><button data-i="${i}">${esc(x.name)}<small>${esc([...new Set([x.admin1,x.country].filter(Boolean))].join('、'))}</small></button></li>`).join('');
+    box.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+      const x=list[+b.dataset.i];
+      loc={lat:x.latitude, lon:x.longitude, name:x.name+(x.country?'、'+x.country:''), gps:false};
+      store.set('loc', loc); closeSheet(); hideErr(); load();
+    });
+  }catch(e){ box.innerHTML='<li style="padding:12px 4px;color:var(--sheet-soft)">検索できませんでした。通信状態を確認してください。</li>'; }
+}
+
+$('weekBtn').onclick = openWeek;
+$('placeBtn').onclick = openSearch;
+$('refresh').onclick = ()=>{ if(!busy) useGPS(); };
+$('closeBtn').onclick = closeSheet;
+$('veil').onclick = closeSheet;
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeSheet(); });
+// swipe down to close sheet
+let sy=null;
+$('sheet').addEventListener('touchstart', e=>{ if($('sheet').scrollTop<=0) sy=e.touches[0].clientY; }, {passive:true});
+$('sheet').addEventListener('touchend', e=>{ if(sy!==null && e.changedTouches[0].clientY-sy>70) closeSheet(); sy=null; });
+
+/* ---------- home-screen icon (drawn here so the app is one single file) ---------- */
+try{
+  const c=document.createElement('canvas'); c.width=c.height=180; const g=c.getContext('2d');
+  const gr=g.createLinearGradient(0,0,0,180); gr.addColorStop(0,'#58a8f0'); gr.addColorStop(1,'#2a6fc0');
+  g.fillStyle=gr; g.fillRect(0,0,180,180);
+  const u=180/64;
+  g.fillStyle='#ffc93c'; g.beginPath(); g.arc(30*u,22*u,12*u,0,7); g.fill();
+  g.fillStyle='#fff';
+  [[29,41,11],[41,35,11],[18,44,8],[48,42,8]].forEach(([x,y,r])=>{g.beginPath();g.arc(x*u,y*u,r*u,0,7);g.fill();});
+  g.fillRect(18*u,40*u,30*u,12*u);
+  const png=c.toDataURL('image/png');
+  document.querySelector('link[rel=apple-touch-icon]').href=png;
+}catch(e){}
+
+/* ---------- start ---------- */
+const last = store.get('last');
+if(last && last.loc){ loc = loc || last.loc; render(last.j, last.at); $('place').textContent=loc.name; }
+// Always try GPS first so the forecast follows you when you travel.
+// If you picked a city by hand, keep it until you tap ⟳ or 「現在地を使う」.
+if(!loc || loc.gps) useGPS(); else load();
+// refresh when the app comes back to the foreground
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='visible'){
+    const l=store.get('last'); if(!l || Date.now()-l.at > 15*60*1000){ (loc && !loc.gps) ? load() : useGPS(); }
+  }
+});
+})();
+</script>
+</body>
+</html>
